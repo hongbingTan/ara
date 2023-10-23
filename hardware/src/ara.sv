@@ -18,13 +18,13 @@ module ara import ara_pkg::*; #(
     // AXI Interface
     parameter  int           unsigned AxiDataWidth = 0,
     parameter  int           unsigned AxiAddrWidth = 0,
-    parameter  type                   axi_ar_t     = logic,
-    parameter  type                   axi_r_t      = logic,
-    parameter  type                   axi_aw_t     = logic,
-    parameter  type                   axi_w_t      = logic,
-    parameter  type                   axi_b_t      = logic,
-    parameter  type                   axi_req_t    = logic,
-    parameter  type                   axi_resp_t   = logic,
+    //parameter  type                   axi_ar_t     = logic,
+    //parameter  type                   axi_r_t      = logic,
+    //parameter  type                   axi_aw_t     = logic,
+    //parameter  type                   axi_w_t      = logic,
+    //parameter  type                   axi_b_t      = logic,
+    //parameter  type                   axi_req_t    = logic,
+    //parameter  type                   axi_resp_t   = logic,
     // Dependant parameters. DO NOT CHANGE!
     // Ara has NrLanes + 3 processing elements: each one of the lanes, the vector load unit, the
     // vector store unit, the slide unit, and the mask unit.
@@ -44,9 +44,17 @@ module ara import ara_pkg::*; #(
     output accelerator_resp_t acc_resp_o,
     output logic              acc_resp_valid_o,
     input  logic              acc_resp_ready_i,
+
+    `ifdef ARA_L1_INTF                                                                           
+    // L1 D$ interface                                                                       
+    output ariane_pkg::dcache_req_i_t [1:0] l1_dcache_req_o,                                  
+     input ariane_pkg::dcache_req_o_t [1:0] l1_dcache_resp_i           // AXI interface
+  `else
     // AXI interface
     output axi_req_t          axi_req_o,
     input  axi_resp_t         axi_resp_i
+  `endif
+
   );
 
   import cf_math_pkg::idx_width;
@@ -319,20 +327,28 @@ module ara import ara_pkg::*; #(
     .NrLanes     (NrLanes     ),
     .AxiDataWidth(AxiDataWidth),
     .AxiAddrWidth(AxiAddrWidth),
-    .axi_ar_t    (axi_ar_t    ),
-    .axi_r_t     (axi_r_t     ),
-    .axi_aw_t    (axi_aw_t    ),
-    .axi_w_t     (axi_w_t     ),
-    .axi_b_t     (axi_b_t     ),
-    .axi_req_t   (axi_req_t   ),
-    .axi_resp_t  (axi_resp_t  ),
+   // .axi_ar_t    (axi_ar_t    ),
+   // .axi_r_t     (axi_r_t     ),
+   // .axi_aw_t    (axi_aw_t    ),
+   // .axi_w_t     (axi_w_t     ),
+   // .axi_b_t     (axi_b_t     ),
+   // .axi_req_t   (axi_req_t   ),
+   // .axi_resp_t  (axi_resp_t  ),
     .vaddr_t     (vaddr_t     )
   ) i_vlsu (
     .clk_i                      (clk_i                                                 ),
     .rst_ni                     (rst_ni                                                ),
+
+  `ifdef ARA_L1_INTF                                                                             
+     // L1 D$ interface                                                                        
+    .l1_dcache_req_o            (l1_dcache_req_o                                       ),
+    .l1_dcache_resp_i           (l1_dcache_resp_i                                      ),
+  `else
     // AXI memory interface
     .axi_req_o                  (axi_req_o                                             ),
     .axi_resp_i                 (axi_resp_i                                            ),
+  `endif
+
     // Interface with the dispatcher
     .core_st_pending_i          (core_st_pending                                       ),
     .load_complete_o            (load_complete                                         ),
