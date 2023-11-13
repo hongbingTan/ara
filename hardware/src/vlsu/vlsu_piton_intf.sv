@@ -32,8 +32,8 @@ module vlsu import ara_pkg::*; import rvv_pkg::*; import ariane_pkg::*; #(
     // input  axi_resp_t               axi_resp_i,
 
     // L1 D$ interface
-    output dcache_req_i_t [1:0] l1_dcache_req_o,
-    input dcache_req_o_t [1:0] l1_dcache_resp_i,
+    output dcache_req_i_t [1:0]    l1_dcache_req_o,
+    input  dcache_req_o_t [1:0]    l1_dcache_resp_i,
 
     // Interface with the dispatcher
     input  logic                    core_st_pending_i,

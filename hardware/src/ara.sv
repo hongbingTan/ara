@@ -45,6 +45,12 @@ module ara import ara_pkg::*; #(
     output logic              acc_resp_valid_o,
     input  logic              acc_resp_ready_i,
 
+    //signals for vector-scalar sharing, add by tanhb
+    output ara_req_t          ara_req,
+    output logic              ara_req_valid,
+
+    input  logic              acc_vs_sharing_mode,
+
     `ifdef ARA_L1_INTF                                                                           
     // L1 D$ interface                                                                       
     output ariane_pkg::dcache_req_i_t [1:0] l1_dcache_req_o,                                  
@@ -79,8 +85,8 @@ module ara import ara_pkg::*; #(
   //////////////////
 
   // Interface with the sequencer
-  ara_req_t                     ara_req;
-  logic                         ara_req_valid;
+  //ara_req_t                     ara_req;
+  //logic                         ara_req_valid;
   logic                         ara_req_ready;
   ara_resp_t                    ara_resp;
   logic                         ara_resp_valid;
@@ -99,32 +105,36 @@ module ara import ara_pkg::*; #(
   ara_dispatcher #(
     .NrLanes(NrLanes)
   ) i_dispatcher (
-    .clk_i             (clk_i           ),
-    .rst_ni            (rst_ni          ),
-    // Interface with Ariane
-    .acc_req_i         (acc_req_i       ),
-    .acc_req_valid_i   (acc_req_valid_i ),
-    .acc_req_ready_o   (acc_req_ready_o ),
-    .acc_resp_o        (acc_resp_o      ),
-    .acc_resp_valid_o  (acc_resp_valid_o),
-    .acc_resp_ready_i  (acc_resp_ready_i),
+    .clk_i             (clk_i             ),
+    .rst_ni            (rst_ni            ),
+    // Interface with Ariane  
+    .acc_req_i         (acc_req_i         ),
+    .acc_req_valid_i   (acc_req_valid_i   ),
+    .acc_req_ready_o   (acc_req_ready_o   ),
+    .acc_resp_o        (acc_resp_o        ),
+    .acc_resp_valid_o  (acc_resp_valid_o  ),
+    .acc_resp_ready_i  (acc_resp_ready_i  ),
+
+    // vector-scalar sharing, add by tanhb
+    .acc_vs_sharing_mode (acc_vs_sharing_mode ),
+
     // Interface with the sequencer
-    .ara_req_o         (ara_req         ),
-    .ara_req_valid_o   (ara_req_valid   ),
-    .ara_req_ready_i   (ara_req_ready   ),
-    .ara_resp_i        (ara_resp        ),
-    .ara_resp_valid_i  (ara_resp_valid  ),
-    .ara_idle_i        (ara_idle        ),
-    // Interface with the lanes
-    .vxsat_flag_i      (vxsat_flag      ),
-    .alu_vxrm_o        (alu_vxrm        ),
-    .fflags_ex_i       (fflags_ex       ),
-    .fflags_ex_valid_i (fflags_ex_valid ),
+    .ara_req_o         (ara_req           ),
+    .ara_req_valid_o   (ara_req_valid     ),
+    .ara_req_ready_i   (ara_req_ready     ),
+    .ara_resp_i        (ara_resp          ),
+    .ara_resp_valid_i  (ara_resp_valid    ),
+    .ara_idle_i        (ara_idle          ),
+    // Interface with the lanes  
+    .vxsat_flag_i      (vxsat_flag        ),
+    .alu_vxrm_o        (alu_vxrm          ),
+    .fflags_ex_i       (fflags_ex         ),
+    .fflags_ex_valid_i (fflags_ex_valid   ),
     // Interface with the Vector Store Unit
-    .core_st_pending_o (core_st_pending ),
-    .load_complete_i   (load_complete   ),
-    .store_complete_i  (store_complete  ),
-    .store_pending_i   (store_pending   )
+    .core_st_pending_o (core_st_pending   ),
+    .load_complete_i   (load_complete     ),
+    .store_complete_i  (store_complete    ),
+    .store_pending_i   (store_pending     )
   );
 
   /////////////////

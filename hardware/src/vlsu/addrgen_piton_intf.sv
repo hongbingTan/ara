@@ -248,7 +248,8 @@ module addrgen import ara_pkg::*; import rvv_pkg::*; import ariane_pkg::*; #(
           addrgen_error_d = 1'b1;
         end else begin
           addrgen_req = '{
-            addr    : pe_req_q.scalar_op + 64'h8011_6000,
+            //addr    : pe_req_q.scalar_op + 64'h8011_6000,
+            addr    : pe_req_q.scalar_op, //modified by tanhb
             len     : pe_req_q.vl,
             stride  : pe_req_q.stride,
             vew     : pe_req_q.vtype.vsew,

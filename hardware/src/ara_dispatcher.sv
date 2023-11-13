@@ -27,6 +27,10 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
     output accelerator_resp_t                    acc_resp_o,
     output logic                                 acc_resp_valid_o,
     input  logic                                 acc_resp_ready_i,
+
+    // vector-scalar sharing, add by tanhb
+    input  logic                                 acc_vs_sharing_mode,
+
     // Interface with Ara's backend
     output ara_req_t                             ara_req_o,
     output logic                                 ara_req_valid_o,
@@ -46,6 +50,8 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
     input  logic                                 store_complete_i,
     input  logic                                 store_pending_i
   );
+
+  logic   acc_vs_sharing_en_q,acc_vs_sharing_en_d;
 
   import cf_math_pkg::idx_width;
 
@@ -171,6 +177,7 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
       rs_lmul_cnt_q       <= '0;
       rs_lmul_cnt_limit_q <= '0;
       rs_mask_request_q   <= 1'b0;
+      acc_vs_sharing_en_q <= 1'b0; 
     end else begin
       state_q             <= state_d;
       eew_q               <= eew_d;
@@ -182,6 +189,7 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
       rs_lmul_cnt_q       <= rs_lmul_cnt_d;
       rs_lmul_cnt_limit_q <= rs_lmul_cnt_limit_d;
       rs_mask_request_q   <= rs_mask_request_d;
+      acc_vs_sharing_en_q <= acc_vs_sharing_en_d;
     end
   end
 
@@ -239,6 +247,8 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
   logic illegal_insn;
 
   always_comb begin: p_decoder
+    acc_vs_sharing_en_d = acc_vs_sharing_en_q;
+    
     // Default values
     vstart_d     = vstart_q;
     vl_d         = vl_q;
@@ -299,6 +309,7 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
       eew_vd_op    : vtype_q.vsew,
       eew_vmask    : eew_q[VMASK],
       cvt_resize   : CVT_SAME,
+     vs_sharing_en : acc_vs_sharing_en_q,
       default      : '0
     };
     ara_req_valid_d = 1'b0;
@@ -498,16 +509,21 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
                     end else if (insn.vsetvl_type.rs1 == '0 && insn.vsetvl_type.rd != '0) begin
                       // Set the vector length to vlmax
                       vl_d = vlmax;
+                      acc_vs_sharing_en_d = acc_vs_sharing_mode; //modified by tanhb
                     end else begin
                       // Normal stripmining
                       vl_d = ((|acc_req_i.rs1[$bits(acc_req_i.rs1)-1:$bits(vl_d)]) ||
                         (vlen_t'(acc_req_i.rs1) > vlmax)) ? vlmax : vlen_t'(acc_req_i.rs1);
+
+                        acc_vs_sharing_en_d = ((|acc_req_i.rs1[$bits(acc_req_i.rs1)-1:$bits(vl_d)]) ||
+                        (vlen_t'(acc_req_i.rs1) > vlmax)) & acc_vs_sharing_mode; //modified by tanhb
                     end
                   end
                 end
 
                 // Return the new vl
-                acc_resp_o.result = vl_d;
+              //  acc_resp_o.result = vl_d;
+                    acc_resp_o.result = vl_d + acc_vs_sharing_en_d; // modified by tanhb
 
                 // If the vtype has changed, wait for the backend before issuing any new instructions.
                 // This is to avoid hazards on implicit register labels when LMUL_old > LMUL_new
@@ -2555,7 +2571,7 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
             unique case (insn.vmem_type.mop)
               2'b00: begin
                 ara_req_d.op = VLE;
-
+                ara_req_d.scalar_op = acc_req_i.rs1 + acc_vs_sharing_en_d << ara_req_d.vtype.vsew; //modified by tanhb
                 // Decode the lumop field
                 case (insn.vmem_type.rs2)
                   5'b00000:;      // Unit-strided
@@ -2581,6 +2597,12 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
               2'b10: begin
                 ara_req_d.op     = VLSE;
                 ara_req_d.stride = acc_req_i.rs2;
+                //modified by tanhb
+                if(acc_vs_sharing_en_d)
+                   ara_req_d.scalar_op = acc_req_i.rs1 + ara_req_d.stride;
+                else
+                   ara_req_d.scalar_op = acc_req_i.rs1;
+
               end
               2'b01, // Indexed-unordered
               2'b11: begin // Indexed-ordered
@@ -2768,7 +2790,7 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
             unique case (insn.vmem_type.mop)
               2'b00: begin
                 ara_req_d.op = VSE;
-
+                ara_req_d.scalar_op = acc_req_i.rs1 + acc_vs_sharing_en_d << ara_req_d.vtype.vsew; //modified by tanhb
                 // Decode the sumop field
                 unique case (insn.vmem_type.rs2)
                   5'b00000:;     // Unit-strided
@@ -2788,6 +2810,15 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
               2'b10: begin
                 ara_req_d.op     = VSSE;
                 ara_req_d.stride = acc_req_i.rs2;
+                
+                //modified by tanhb
+                if(acc_vs_sharing_en_d)
+                   ara_req_d.scalar_op = acc_req_i.rs1 + ara_req_d.stride;
+                else
+                   ara_req_d.scalar_op = acc_req_i.rs1;
+
+
+
               end
               2'b01, // Indexed-unordered
               2'b11: begin // Indexed-orderd

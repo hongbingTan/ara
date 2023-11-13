@@ -19,7 +19,7 @@ package ara_pkg;
   localparam int unsigned ELENB = ELEN / 8;
   // Number of bits in a vector register.
   //localparam int unsigned VLEN  = `ifdef VLEN `VLEN `else 0 `endif;
-  localparam int unsigned VLEN  = 4096; //modified by tanhb
+  localparam int unsigned VLEN  = 128; //4096; //modified by tanhb
   // Number of bytes in a vector register.
   localparam int unsigned VLENB = VLEN / 8;
   // Maximum vector length (in elements).
@@ -317,6 +317,9 @@ package ara_pkg;
 
     // Request token, for registration in the sequencer
     logic token;
+
+    logic vs_sharing_en; //add by tanhb
+
   } ara_req_t;
 
   typedef struct packed {
