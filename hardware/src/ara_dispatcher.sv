@@ -3246,4 +3246,30 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
     ara_req_d.token = (ara_req_valid_o && ara_req_ready_i) ? ~ara_req_o.token : ara_req_o.token;
   end: p_decoder
 
+
+
+
+
+
+
+
+
+
+
+  //************test signals*******
+  logic [9:0]   vl_len, vlmax_define;
+
+  //assign vl_len = VLMAX;
+
+  assign vlmax_define = VLENB;
+  //*******************************
+
+
+
+
+
+
+
+
+
 endmodule : ara_dispatcher
