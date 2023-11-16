@@ -507,9 +507,9 @@ module ara import ara_pkg::*; #(
   if (RVVF(FPUSupport) && !ariane_pkg::RVF)
     $error(
       "[ara] Cannot support single-precision floating-point on Ara if Ariane does not support it.");
-
+/*
   if (RVVH(FPUSupport) && !ariane_pkg::XF16)
     $error(
       "[ara] Cannot support half-precision floating-point on Ara if Ariane does not support it.");
-
+*/
 endmodule : ara
